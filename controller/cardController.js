@@ -30,14 +30,16 @@ function generateReport(request,response){
 
     let updatedCard = cardsWithFullDetails;
 
+    //Add updated list name to the card obj
     updatedCard = updatedCard.map(card=>{    
         const matched = lists.find(list=> card.idList == list.id)
         if (matched){
-            card.updatedListName = matched.name //add updated list name to the card obj
+            card.updatedListName = matched.name
             return {...card}
         } 
     })
     
+    //Filter
     //list
     const status = request.query.status;
     const arrStatus = objStatus[status];
@@ -74,10 +76,24 @@ function generateReport(request,response){
             card.date <= toDate
         )
     }
+    //End of filter
 
+    //Group by list
     var sortedCard = _.groupBy(updatedCard,'updatedListName');
-    response.json(sortedCard);
 
+    //Group by month of card created
+    for (let cardStatus in sortedCard){
+        sortedCard[cardStatus] =_.groupBy(sortedCard[cardStatus], data=>{
+            const createdDate = new Date(data.date)
+            return createdDate.toLocaleString('default', { month: 'long' })
+        });
+
+        //to display number of cards created
+        for (let cardInMonth in sortedCard[cardStatus]){
+            sortedCard[cardStatus][cardInMonth] = _.size(sortedCard[cardStatus][cardInMonth]);
+        }
+    }
+    response.json(sortedCard);
   };
 
   axios
